@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yükleniyor...</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- TEMEL AYARLAR --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        /* TEMA DEĞİŞTİRME BUTONU */
+        .theme-switch-btn {
+            position: fixed; top: 25px; right: 25px;
+            width: 50px; height: 50px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10002; text-decoration: none; color: white; font-size: 20px;
+            transition: all 0.5s ease;
+        }
+        .theme-switch-btn:hover {
+            transform: rotate(180deg) scale(1.1);
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        /* RGB CURSOR */
+        #rgb-cursor {
+            position: fixed; top: 0; left: 0;
+            width: 15px; height: 15px;
+            border-radius: 50%; background: red; 
+            pointer-events: none; z-index: 10000;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+            mix-blend-mode: difference;
+        }
+
+        /* SU EFEKTİ CANVAS */
+        #trail-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 9999; pointer-events: none;
+        }
+
+        #bg-video {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: -2; filter: brightness(0.5);
+        }
+
+        #enter-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 10001;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        #enter-text { font-size: 14px; letter-spacing: 3px; font-weight: 700; animation: pulse 1s infinite alternate; }
+
+        .container {
+            position: relative; z-index: 10; width: 100%; max-width: 600px;
+            opacity: 0; transform: scale(0.9); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .title { font-size: 48px; font-weight: 900; margin-bottom: 5px; text-shadow: 0 0 20px rgba(255,255,255,0.3); }
+        .bio-text { font-size: 14px; color: #ccc; margin-bottom: 30px; }
+
+        .discord-box {
+            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;
+            padding: 10px 15px; display: inline-flex; align-items: center; gap: 12px;
+            margin-bottom: 25px; transition: 0.3s;
+        }
+        .discord-box:hover { background: rgba(255, 255, 255, 0.1); transform: translateY(-2px); }
+        .d-avatar { width: 40px; height: 40px; border-radius: 50%; }
+        .d-info { text-align: left; }
+        .d-user { font-weight: 700; font-size: 14px; }
+        .d-status { font-size: 11px; color: #aaa; }
+
+        .socials { display: flex; justify-content: center; gap: 20px; }
+        .s-link { position: relative; color: rgba(255,255,255,0.6); font-size: 24px; transition: 0.3s; text-decoration: none; }
+        .s-link:hover { color: #fff; transform: scale(1.2); }
+        .s-link::before {
+            content: attr(data-tooltip); position: absolute; bottom: 120%; left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: rgba(255, 255, 255, 0.9); color: #000; padding: 4px 8px; border-radius: 4px;
+            font-size: 11px; font-weight: bold; opacity: 0; pointer-events: none; transition: 0.3s; white-space: nowrap;
+        }
+        .s-link:hover::before { opacity: 1; transform: translateX(-50%) translateY(0); } 
+        @keyframes pulse { from { opacity: 0.6; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="theme-switch-btn" title="Temayı Değiştir">
+        <i class="fa-solid fa-palette"></i>
+    </a>
+
+    <div id="rgb-cursor"></div>
+    <canvas id="trail-canvas"></canvas>
+
+    <video id="bg-video" autoplay loop muted playsinline>
+        <source src="guid.mp4" type="video/mp4">
+    </video>
+
+    <div id="enter-screen"><div id="enter-text">TIKLA</div></div>
+    <audio id="audio" loop><source src="guidses.mp3" type="audio/mpeg"></audio>
+
+    <div class="container" id="content">
+        <div class="title" id="main-title">Baki Kara</div>
+        <div class="bio-text">No risk, no story.</div>
+
+        <div class="discord-box">
+            <img id="d-avatar" class="d-avatar" src="https://cdn.discordapp.com/embed/avatars/0.png">
+            <div class="d-info">
+                <div class="d-user" id="d-user">...</div>
+                <div class="d-status" id="d-status">Yükleniyor...</div>
+            </div>
+        </div>
+
+        <div class="socials">
+            <a href="https://instagram.com/mehwett13" target="_blank" class="s-link" data-tooltip="Instagram"><i class="fa-brands fa-instagram"></i></a>
+            <a href="https://github.com/EtenaShop" target="_blank" class="s-link" data-tooltip="Github"><i class="fa-brands fa-github"></i></a>
+            <a href="https://discord.com/users/1252284892457468026" target="_blank" class="s-link" data-tooltip="Discord"><i class="fa-brands fa-discord"></i></a>
+        </div>
+    </div>
+
+    <script>
+        const CONFIG = { discordID: "1252284892457468026" };
+        const cursor = document.getElementById('rgb-cursor');
+        const canvas = document.getElementById('trail-canvas');
+        const ctx = canvas.getContext('2d');
+        const bgVideo = document.getElementById('bg-video'); // Video elementi yakalandı
+        
+        let width, height;
+        let particles = [];
+        let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        let hue = 0;
+
+        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize); resize();
+
+        document.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX; mouse.y = e.clientY;
+            cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+            createParticles(3);
+        });
+
+        function updateHue() {
+            hue++; if(hue > 360) hue = 0;
+            cursor.style.background = `hsl(${hue}, 100%, 50%)`;
+            cursor.style.boxShadow = `0 0 15px hsl(${hue}, 100%, 50%)`;
+        }
+
+        class Particle {
+            constructor() {
+                this.x = mouse.x; this.y = mouse.y;
+                this.size = Math.random() * 5 + 2;
+                this.speedY = Math.random() * 2 + 1; this.speedX = Math.random() * 1 - 0.5;
+                this.color = `hsl(${hue}, 100%, 50%)`; this.life = 1.0;
+            }
+            update() { this.y += this.speedY; this.x += this.speedX; this.size *= 0.95; this.life -= 0.02; }
+            draw() { ctx.fillStyle = this.color; ctx.globalAlpha = this.life; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1.0; }
+        }
+
+        function createParticles(amount) { for(let i=0; i<amount; i++) particles.push(new Particle()); }
+        function animate() {
+            ctx.clearRect(0, 0, width, height); updateHue();
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update(); particles[i].draw();
+                if (particles[i].life <= 0 || particles[i].size <= 0.3) { particles.splice(i, 1); i--; }
+            }
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        const enterScreen = document.getElementById('enter-screen');
+        const content = document.getElementById('content');
+        const audio = document.getElementById('audio');
+        
+        // SES VE VİDEO OYNATMA FONKSİYONU
+        function playMedia() {
+            // Müzik çalmayı dene
+            audio.volume = 0.4;
+            audio.play().catch(e => console.log("Ses çalma hatası:", e));
+            
+            // Video oynatmayı dene (Otomatik oynatma engellense bile tıklama ile çalışacaktır)
+            bgVideo.play().catch(e => console.log("Video oynatma hatası:", e));
+        }
+
+        enterScreen.addEventListener('click', () => {
+            playMedia(); // Tıklamayla medya başlatılır
+            
+            // GÖRSEL GEÇİŞ
+            enterScreen.style.opacity = '0';
+            setTimeout(() => { 
+                enterScreen.style.display = 'none'; 
+                content.style.opacity = '1'; 
+                content.style.transform = 'scale(1)'; 
+            }, 500); 
+        });
+
+        async function fetchDiscord() {
+            try {
+                const res = await fetch(`https://api.lanyard.rest/v1/users/${CONFIG.discordID}`);
+                const json = await res.json();
+                if(json.success) {
+                    const data = json.data;
+                    document.getElementById('d-user').innerText = data.discord_user.username;
+                    const ext = data.discord_user.avatar && data.discord_user.avatar.startsWith("a_") ? "gif" : "png";
+                    
+                    if(data.discord_user.avatar) {
+                        document.getElementById('d-avatar').src = `https://cdn.discordapp.com/avatars/${CONFIG.discordID}/${data.discord_user.avatar}.${ext}?size=128`;
+                    } else {
+                        document.getElementById('d-avatar').src = `https://cdn.discordapp.com/embed/avatars/0.png`;
+                    }
+
+                    if(data.listening_to_spotify) document.getElementById('d-status').innerText = "🎵 " + data.spotify.song;
+                    else if(data.activities.length > 0) { const game = data.activities.find(a => a.type === 0); document.getElementById('d-status').innerText = game ? "🎮 " + game.name : data.discord_status; }
+                    else document.getElementById('d-status').innerText = data.discord_status;
+                }
+            } catch(e){
+                console.error("Discord Lanyard hatası:", e);
+            }
+        }
+        setInterval(fetchDiscord, 5000); fetchDiscord();
+
+        /* SEKME İSMİ ANİMASYONU */
+        const pageTitle = "@mehwet13"; 
+        let titleIndex = 0;
+        let isDeleting = false;
+
+        function typeTitle() {
+            let current = pageTitle.substring(0, titleIndex);
+            document.title = current + "_"; 
+
+            if (!isDeleting) {
+                titleIndex++;
+                if (titleIndex > pageTitle.length) {
+                    isDeleting = true;
+                    setTimeout(typeTitle, 2000); 
+                    return;
+                }
+            } else {
+                titleIndex--;
+                if (titleIndex === 0) {
+                    isDeleting = false;
+                }
+            }
+            const speed = isDeleting ? 200 : 400;
+            setTimeout(typeTitle, speed);
+        }
+        typeTitle();
+    </script>
+</body>
+</html>
